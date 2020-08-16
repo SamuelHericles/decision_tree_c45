@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # # Trabalho de reconhecimento de padrões
 # + Implementar o algoritmo C4.5 de Árvore de Decisão para classificar o banco de dados fornecido
 # + No algoritmo C4.5, você deve usar a entropia (ganho de informação) como critério de escolha dos nós
@@ -9,10 +6,7 @@
 # + Você deve escolher os atributos que achar mais convenientes
 # + Deve-se usar pelo menos 4 atributos.
 
-# # Imports necessários
-
-# In[240]:
-
+# Imports necessários
 
 import pandas as pd
 import numpy as np
@@ -23,19 +17,13 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-# # Carregar base de dados
-
-# In[3]:
-
+# Carregar base de dados
 
 dados = pd.read_csv('https://raw.githubusercontent.com/SamuelHericles/Arvore_decisao/master/wine.csv')
 dados
 
 
-# # Escolhas dos atributos
-
-# In[4]:
-
+# Escolhas dos atributos
 
 atributos = pd.DataFrame({})
 atributos['Classes']  = dados['Classes'] 
@@ -43,13 +31,8 @@ atributos['media']    = dados.iloc[:,1:].mean(axis='columns')
 atributos['mediana']  = dados.iloc[:,1:].median(axis='columns')
 atributos['max']      = dados.iloc[:,1:].max(axis='columns')  
 atributos['var']      = dados.iloc[:,1:].var(axis='columns')
-atributos
 
-
-# # Plotagem dos atributos
-
-# In[266]:
-
+# Plotagem dos atributos
 
 ax = plt.figure(figsize=(20,10))
 
@@ -72,19 +55,12 @@ ax = plt.plot(atributos['var'],'*')
 plt.show()
 
 
-# # Conforme dito, vamos remover uma classe
-
-# In[245]:
-
+# Conforme dito, vamos remover uma classe
 
 atributos.drop(atributos.query('Classes==3').index,inplace=True)
 atributos
 
-
-# # Divide os dados de treino e teste com Kfold shuffle estratificado
-
-# In[ ]:
-
+# Divide os dados de treino e teste com Kfold shuffle estratificado
 
 # @param base  base dados da situação
 # return X     base de treino
@@ -115,18 +91,6 @@ def kfold_shuffle_estratificado(base):
     X = X.append(X_classe_2,ignore_index=True)
     y = y.append(y_classe_2,ignore_index=True)
     return X,y
-
-
-# # Entropia
-# $H = - \sum_{i=1}^{n} {p_i(x)logp_i(x)}$
-# # Ganho de informação
-# $GH = H_{raiz} - \sum{pesos}*H_{folha}$
-# 
-# $Pesos = \frac{Nº amostras da folha}{Nº amostras da raiz}$
-# 
-# 
-
-# In[ ]:
 
 
 # @param base       base de dados para entropia
@@ -163,10 +127,7 @@ def ganho_de_informacao(folha,entropia_pai,entropia_filho):
     return GH
 
 
-# # Rotulagem da base dados pelo o limiar da mediana dos atributos
-
-# In[281]:
-
+# Rotulagem da base dados pelo o limiar da mediana dos atributos
 
 # @param base            base de dados de um atributo
 # @param entropia_pai    entropia da base de dados da situação
@@ -198,7 +159,7 @@ def divide_pelo_limar(base,entropia_pai):
     return GH,limiar
 
 
-# # O algoritmo de árvore de descisão C4.5
+# O algoritmo de árvore de descisão C4.5
 # 1. Para cada atributo:
 # 
 #     1.1 Ordene os atributos da base de treinamento do atributo específico;
@@ -211,9 +172,6 @@ def divide_pelo_limar(base,entropia_pai):
 # 
 # 
 # Fonte: slide disponivel pelo professor.
-
-# In[282]:
-
 
 # @param X       base de treino
 # @param y       base de teste
@@ -257,16 +215,13 @@ def arvore_de_decisao_c45(X,y):
     return (sum(y_pred['Classes_pred'] == y['Classes'])/y.shape[0])*100
 
 
-# # Execução do algoritmo
-
-# In[ ]:
-
+# Execução do algoritmo
 
 # Vetor de acurácias
 accs = []
 
 # Cálcula várias vezes base de dados diferentes com árvore de descição
-for i in range(1000):
+for i in range(10):
     X,y = kfold_shuffle_estratificado(atributos)
     accs.append(arvore_de_decisao_c45(X,y))
 
@@ -276,10 +231,7 @@ plt.plot(accs,'*')
 plt.show()
 
 
-# # Teste com sklearn
-
-# In[331]:
-
+# Teste com sklearn
 
 from sklearn import tree
 from sklearn.model_selection import cross_validate
@@ -304,16 +256,3 @@ dot_data = export_graphviz(clf, out_file = None, filled = True,
 # Temos 10 modelos (cv = 10)
 graph = graphviz.Source(dot_data)
 graph
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
