@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Trabalho de reconhecimento de padrões
-# + Implementar o algoritmo C4.5 de Árvore de Decisão para classificar o banco de dados fornecido
-# + No algoritmo C4.5, você deve usar a entropia (ganho de informação) como critério de escolha dos nós
-# + Não é necessário realizar as podas
-# + Usar validação cruzada K-fold com K=10
-# + Você deve escolher os atributos que achar mais convenientes
-# + Deve-se usar pelo menos 4 atributos.
+# # Pattern recognition work
+# + Implement the C4.5 Decision Tree algorithm to classify the database provided
+# + In the C4.5 algorithm, you must use entropy (information gain) as a criterion for choosing the nodes
+# + Pruning is not necessary
+# + Use K-fold cross validation with K = 10
+# + You must choose the attributes that you find most convenient
+# + At least 4 attributes must be used.
 
-# # Imports necessários
+# # Imports needed
+
+# In[1]:
 
 
 import pandas as pd
@@ -21,9 +23,12 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-# # Carregar base de dados
+# # Load database
 # 
-# Criei um link no github para ficar mais facil carregar a base de dados, porque se não podia dificultar o meu programa procurar o arquivo nos diretórios de um computador. Além disso, tratei de nomear as colunas pois elas não estavam caracterizadas.
+# I created a link on github to make it easier to load the database, because if it couldn't make it difficult for my program to look for the file in the directories of a computer. In addition, I tried to name the columns because they were not characterized.
+
+# In[2]:
+
 
 dados   = pd.read_csv('https://raw.githubusercontent.com/SamuelHericles/Arvore_decisao/master/wine.csv')
 columns = {'Classe','Alcool','Acido malico','Cinza','Alcalinidade da cinza','Magnesio',
@@ -33,15 +38,18 @@ dados.columns = columns
 dados
 
 
-# # Escolhas dos atributos
-# Conforme dito no trabalho as colunas dadas já estão com os atributos a serem escolhidos, logo escolhi os quatro primeiros que são:
-# + Prolina
-# + Matiz
+# # Attribute choices
+# As stated in the work, the columns given already have the attributes to be chosen, so I chose the first four, which are:
+# + Proline
+# + Hue
 # + Magnesio
-# + Cinza
-# + Alcool
+# + Gray
+# + Alcohol
 # 
-# Não há problema em escolher outros atributos.
+# There is no problem in choosing other attributes.
+
+# In[3]:
+
 
 atributos = pd.DataFrame({})
 atributos['Classe']  = dados['Classe'] 
@@ -52,56 +60,63 @@ atributos[dados.iloc[:,4].name]  = dados.iloc[:,4]
 atributos
 
 
-# # Conforme dito, vamos remover uma classe
-# Conforme aconselhado pelo professor alexandre, poderiamos remover uma classe da base para facilitar o trabalho, mas caso tivesse algunas dias a mais para a entrega acho que conseguia fazer para n classes.
+# # As stated, we will remove a class
+# As advised by professor alexandre, we could remove a class from the base to make the job easier, but if I had a few more days for delivery I think I could do it for n classes.
+
+# In[4]:
+
 
 atributos.drop(atributos.query('Classe==3').index,inplace=True)
 atributos
 
 
-# # Divide os dados de treino e teste com Kfold shuffle estratificado
+# # Split training and test data with stratified Kfold shuffle
 # 
-# Como havia comentado com o professor sobre o uso de kfold aleatório(shuffle) ele me recomendou para tratar da proporção entre as classes, então tratei assim:
+# As he had commented to the professor about the use of random kfold (shuffle) he recommended me to deal with the proportion between classes, so I treated it like this:
 # 
-# + Na classe 1 como há 59 amostras pegei 10% delas que dá **6 amostras de teste** e **53 amostras de treinamento**
-# + Na classe 2 como há 71 amostras pegei 10% delas que dá **7 amostras de teste** e **64 amostras de treinamento**
+# + In class 1 as there are 59 samples, I took 10% of them which gives ** 6 test samples ** and ** 53 training samples **
+# + In class 2 as there are 71 samples I took 10% of them which gives ** 7 test samples ** and ** 64 training samples **
 # 
-# ao todo deu 13 amostras de teste escolhidas aleatóriamente e 117 amostras de teste.
+# in all it gave 13 test samples chosen at random and 117 test samples.
 # 
-# A lógica da função abaixo é:
+# The logic of the function below is:
 # 
-# 1 - Divide a base entre as amostra da classe 1 e 2
+# 1 - Divide the base between class 1 and 2 samples
 # 
-# 2 - Após divida pega 10% dos indices das amostras aleatóriamente
+# 2 - After debt, you take 10% of the sample indices at random
 # 
-# 3 - Os indices que não estão nos 10% aleatório vão para base de treinamento
+# 3 - The indices that are not in the 10% random go to the training base
 # 
-# 4 - Após feito os passos acima junta os indeces de trenio em um base chamada de **X** e teste chamda de **y** 
-# 
+# 4 - After doing the steps above, join the sleigh indices in a base called ** X ** and test called ** y **
 
-# @param base  Base dados da situação
-# return X     Base de treino
-# return y     Base de teste 
+# In[5]:
+
+
+
 def kfold_shuffle_estratificado(base):
-    # Pegar a quantidade de dados que a classe 1 tem
+    # @param base Base situation data
+    # return X Training base
+    # return y Test Base
+    
+    # Take the amount of data that class 1 has
     Classe1 = base.query('Classe==1')
     Classe1.reset_index(drop=True,inplace=True)
 
-    # Pegar a quantidade de dados que a classe 2 tem
+    # Take the amount of data that class 2 has
     Classe2 = base.query('Classe==2')
     Classe2.reset_index(drop=True,inplace=True)
 
-    # Dividir os dados de treino e teste da classe 1
+    # Split class 1 test and training data
     index_teste_classe_1 = sorted(random.sample([i for i in Classe1.index.values],int(Classe1.shape[0]*.1)+1))
     X_classe_1 = Classe1.iloc[[i for i in Classe1.index if i not in index_teste_classe_1],:]
     y_classe_1 = Classe1.iloc[index_teste_classe_1,:]
 
-    # Dividir os dados de treino e teste da classe 2
+    # Gathering training data and testing the classes
     index_teste_classe_2 = sorted(random.sample([i for i in Classe2.index.values],int(Classe2.shape[0]*.1)))
     X_classe_2 = Classe2.iloc[[i for i in Classe2.index if i not in index_teste_classe_2],:]
     y_classe_2 = Classe2.iloc[index_teste_classe_2,:]
 
-    # Juntar dados de Treino e teste das classes
+    # Split class 2 test and training data
     X = X_classe_1
     y = y_classe_1
 
@@ -110,62 +125,76 @@ def kfold_shuffle_estratificado(base):
     return X,y
 
 
-# # Entropia
+# # Entropy
+# 
 # $H = - \sum_{i=1}^{n} {p_i(x)logp_i(x)}$
-# # Ganho de informação
+# 
+# # Info Gain
+# 
 # $GH = H_{raiz} - \sum{pesos}*H_{folha}$
 # 
 # $Pesos = \frac{Nº amostras da folha}{Nº amostras da raiz}$
 # 
 # 
-# As funções abaixo segue a equaçãoes da entropia e ganho acima, vale resaltar que usei a biblioteca math pois ela tem o recursos para alterar a base da função logaritmica pois com isso coloquei para base 2.
+# The functions below follow the entropy and gain equations above, it is worth mentioning that I used the math library because it has the resources to change the base of the logarithmic function because I put it into base 2.
 
-# @param base       Base de dados para entropia
-# return entropia   Entropia da base de atributos
+# In[6]:
+
+
+
 def calcula_entropia(base):
-    # Pega quantidade de amostras da classe 1
+    # @param base Entropy database
+    # return entropy Entropy of the attribute base
+    
+    # Takes quantity of samples from class 1
     qt_am_1 = base.query('Classe==1').shape[0]
     
-    # Pega quantidade de amostras da classe 2
+    # Takes quantity of samples from class 2
     qt_am_2 = base.query('Classe==2').shape[0]
     
-    # Pega o tamanho do vector de atributos
+    # Get the size of the attribute vector
     qt_base = base.shape[0]
     
-    # Calcula a probabilidade de cada classe 
+    # Calculates the probability of each class 
     probabilidade_1  = qt_am_1/qt_base
     probabilidade_2  = qt_am_2/qt_base
     
-    # Calcula a entropia
+    # Calculates entropy
     Entropia = -1*(probabilidade_1*math.log(probabilidade_1,2) + probabilidade_2*math.log(probabilidade_2,2))
     return Entropia
 
-# @param folha          Base de dados da folha
-# @param entropia_pai   Entropia da base de dados completa
-# @param entropia_filho Entropia do atributo especifíco
-# return GH             Ganho de informação
+
 def ganho_de_informacao(folha,entropia_pai,entropia_filho):
-    
-    # Pega os pelos de cada classe e coloca neste veto
+    # @param sheet Sheet database
+    # @param entropia_pai Entropy of the complete database
+    # @param entropia_filho Entropy of the specific attribute
+    # return GH Gain information 
+
+    # Take the hair from each class and put it in this veto
     Pesos = [folha.query('Classe==1').shape[0]/folha.shape[0],folha.query('Classe==2').shape[0]/folha.shape[0]]
     
-    # Calcula o ganho de informação do nó filho
+    # Calculates the information gain of the child node
     GH = (Pesos[0]*entropia_filho + Pesos[1]*entropia_filho) - entropia_pai
     return GH
 
 
-# # Rotulagem da base dados pelo o limiar da mediana dos atributos
+# # Database labeling by the median threshold of attributes
 # 
-# Essas duas funções são as mais importanes do algoritmo pois elas uma procura o melhor limiar baseado no ganho de informação da divisão dos rotulo do atributo a outra divide a base de dados do atributos para rotulá-la.
-# + A função **caca_limiar** faça a caçada do melhor limiar que rotula melhor a base de dado, ela pega organiza a base de dados em ordem crescente e reseta os indices do vetor para pocura. Para realizar o algoritmo mais rápido, ele verifica se a classe de dois atributos são diferentes para efetuar a média dos dois  e assim verificar o ganho de informação com este. Por fim, quando pegar um vetor de todos os limiares e seus ganhos de informação, nos ordenamos em ordem descrecente com base no ganho de informação para obter o limiar com maior ganho e assim retornar este valor na função.
-# + a função **divide_pelo_limiar** pega o limiar inserido na função após isso executa a função **ganho_de_informacao** após a rotulagem da base de dados, por fim retorna o ganho e informação o limiar escolhido.
+# These two functions are the most important of the algorithm because they search for the best threshold based on the gain of information from the division of the attribute labels, the other divides the database of attributes to label it.
+# + The function ** caca_limiar ** hunt for the best threshold that best labels the database, it takes the organization of the database in ascending order and resets the indexes of the vector to pocura. To make the algorithm faster, it checks if the class of two attributes is different to average the two and thus check the information gain with it. Finally, when taking a vector of all thresholds and their information gains, we order in a descending order based on the information gain to obtain the highest gain threshold and thus return this value in the function.
+# + the function ** divide_ by the threshold ** takes the threshold entered in the function after that executes the function ** gain_of_information ** after the labeling of the database, finally returns the gain and information to the chosen threshold.
 
-# @param base            Base de dados de um atributo
-# @param nome            Nome do atributo(feature)
-# @param entropia_pai    Entropia da base de dado original
-# return GH_best         Retorna o melhor ganho de informação do determinado limiar
-# return limiar_best     Retorna o limiar do melhor ganho de informação
+# In[7]:
+
+
+
 def caca_limiar(base,nome,entropia_pai):
+    # @param base Database of an attribute
+    # @param name Attribute name (feature)
+    # @param entropia_pai Entropy from the original database
+    # return GH_best Returns the best information gain for the given threshold
+    # return limiar_best Returns the threshold for the best information gain
+    
     valores = base.sort_values(nome)
     valores.reset_index(drop=True,inplace=True)
     GH_limiar = []
@@ -177,16 +206,17 @@ def caca_limiar(base,nome,entropia_pai):
     GH_best,limiar_best = sorted(GH_limiar,reverse=True)[0]
     return GH_best,limiar_best
 
-# @param base            Base de dados de um atributo
-# @param entropia_pai    Entropia da base de dados da situação
-# return GH              Ganho de informação do atributo
-# return limiar          Limiar do atributo
+
 def divide_pelo_limar(base,entropia_pai,limiar):
+    # @param base Database of an attribute
+    # @param entropia_pai Entropy of the situation database
+    # return GH Gain attribute information
+    # return threshold Threshold of attribute
     
-    # Cria um dataframe que pega a classe e o valor
+    # Creates a dataframe that takes the class and value
     folha = pd.DataFrame(columns = {'Classe','Valor'})
 
-    # Rotula os dados de teste a partir de cada limiar dos atributos
+    # Label test data from each attribute threshold
     for i in range(base.shape[0]):
          if base[i] > limiar:
                 folha = folha.append({'Classe':1,'Valor':base[i]},
@@ -195,38 +225,43 @@ def divide_pelo_limar(base,entropia_pai,limiar):
             folha = folha.append({'Classe':2,'Valor':base[i]},
                            ignore_index=True)
 
-    # Após rotular os atributos calcula-se a entropia
+    # After labeling the attributes, entropy is calculated
     entropia_filho = calcula_entropia(folha)
     
-    # Depois o ganho de informação
+    # Then gain information
     GH = ganho_de_informacao(folha,entropia_pai,entropia_filho)
     
     return GH,limiar
 
 
-# # O algoritmo de árvore de descisão C4.5
-# 1. Para cada atributo:
+# # The C4.5 descision tree algorithm
+# 1. For each attribute:
 # 
-#     1.1 Ordene os atributos da base de treinamento do atributo específico;
+#      1.1 Order the attributes of the training base of the specific attribute;
 #     
-#     1.2 Determinar os limiares $\theta$;
+#      1.2 Determine the thresholds $ \ theta $;
 #     
-#     1.3 Para cada limiar $\theta$, determine as informações entre $\theta$ e os atributos.
+#      1.3 For each $ \ theta $ threshold, determine the information between $ \ theta $ and the attributes.
 #     
-# 2. Escolha os pares [atributo,$\theta$] que oferece o mais alto ganho de informação.
+# 2. Choose the pairs [attribute, $ \ theta $] that offers the highest gain of information.
 # 
 # 
-# Fonte: slide disponivel pelo professor.
+# Source: slide available by the teacher.
 # 
 # 
-# + A função **rotula_rec** rotula recursivamente para criar as folhas da base de dados. No caso que foi escolhido 4 atributos é criado uma arvore com 4 de profundidade e $2^3 + 2^2 + 2 + 1$ = 15 folhas.
-# + A função **arvore_de_decisao_c45** é a função principal que usa todas as funções acima.
+# + The function ** rotula_rec ** labels recursively to create the database sheets. In the case that 4 attributes were chosen, a tree with 4 depth and $ 2 ^ 3 + 2 ^ 2 + 2 + 1 $ = 15 leaves is created.
+# + The function ** arvore_de_decisao_c45 ** is the main function that uses all the above functions.
 
-# @param base       Dataframe do atributo específico
-# @param GHs        Dataframe dos ganhos de informação e limiares
-# @param i          Posição do dataframe
-# return rotulos    Vetor dos rótulos atribuidos
+# In[8]:
+
+
+
 def rotula_rec(base,GHs,i):
+    # @param base Dataframe of the specific attribute
+    # @param GHs Dataframe of information gains and thresholds
+    # @param i Dataframe position
+    # return labels Vector of assigned labels
+
     rotulos = pd.DataFrame({})
     base.reset_index(drop=True,inplace=True)
     if i < GHs.shape[1]:
@@ -245,54 +280,62 @@ def rotula_rec(base,GHs,i):
     
     return rotulos['Classes_pred']
 
-# @param X       Base de treino
-# @param y       Base de teste
-# return         Acurácia do modelo
+
 def arvore_de_decisao_c45(X,y):
-    
-    # Pega a entropia da base de dados
+    # @param X Training base
+    # @param y Test Base
+    # return Model accuracy
+
+    # Get the entropy from the database
     entropia_pai = calcula_entropia(X)
     
-    # Cria o dataframe que armazena os ganhos
+    # Creates the dataframe that stores earnings
     GHs = pd.DataFrame(columns = {'GH','Limiar','Nome'})
     
-    # Pegar os dados de informação de cada atributo
+    # Get information data for each attribute
     for coluna in X.columns[1:]:
         df_aux = pd.DataFrame({})
         df_aux = atributos[['Classe',coluna]]
         GH,limiar = caca_limiar(df_aux,coluna,entropia_pai)  
         GHs = GHs.append({'GH':GH,'Limiar':limiar,'Nome':coluna},ignore_index=True)
 
-    # Organiza os ganhos de informação em ordem descrecente
+    # Organizes the information gains in descending order
     GHs.sort_values('GH',ascending=False,inplace=True)
     GHs.reset_index(drop=True,inplace=True)
 
-    # Retira os rótulos da base de teste
+    # Remove the labels from the test stand
     y_pred = y.iloc[:,1:]
     y_pred['Classes_pred'] = 0
     y_pred['Classes_pred'] = rotula_rec(y_pred,GHs,0)
     return (sum(y_pred['Classes_pred'] == y['Classe'])/y.shape[0])*100
 
 
-# # Execução do algoritmo
+# Execution of the algorithm
+
+# In[9]:
 
 
-# Vetor de acurácias
 accs = []
 
-# Cálcula várias vezes base de dados diferentes com árvore de descição
 for _ in range(10):
     print(_)
     X,y = kfold_shuffle_estratificado(atributos)
     accs.append(arvore_de_decisao_c45(X,y))
 
-# Plota cada resultado junto com a acurácia média do modelo
 plt.title(f'Acurácia média do modelo é: {np.mean(accs).round(2)}%')
 plt.plot(accs,'-')
 plt.show()
 
 
-# # Teste com sklearn
+# # Teste sklearn
+
+# In[11]:
+
+
+get_ipython().system('pip install graphviz')
+
+
+# In[12]:
 
 
 from sklearn import tree
